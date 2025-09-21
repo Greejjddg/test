@@ -42,8 +42,9 @@
 <body>
   <div class="app">
     <header class="topbar">
-      <div class="brand"><div class="logo">EG</div>
-        <div><div class="title">EduGPT</div><div class="subtitle">Качественное образование — Цель ООН №4</div></div>
+      <div class="brand"><div class="logo">MM</div>
+        <div><div class="title">Mentorium
+</div><div class="subtitle"></div></div>
       </div>
       <div class="actions">
         <script async src="https://telegram.org/js/telegram-widget.js?22"
@@ -89,8 +90,8 @@ function onTelegramAuth(user){ localStorage.setItem("telegram_id",user.id); }
 /* Курсы */
 const COURSES = [
   {id:1,title:"Python",description:"Основы языка Python",testName:"python"},
-  {id:2,title:"Математика",description:"Базовые вычисления",testName:"math"},
-  {id:3,title:"Английский язык",description:"Базовые навыки",testName:"english"}
+  {id:2,title:"C++",description:"Базовые вычисления",testName:"math"},
+  {id:3,title:"Machine Learnuing",description:"Базовые навыки",testName:"english"}
 ];
 const coursesEl=document.getElementById("courses");
 COURSES.forEach(c=>{
@@ -139,7 +140,7 @@ document.getElementById("close-test").onclick=()=>document.getElementById("modal
 function checkAnswers(testName){
   const test=tests[testName]; const form=document.getElementById("quizForm"); let score=0;
   test.forEach((item,i)=>{const selected=form[`q${i}`].value; if(parseInt(selected)===item.answer)score++;});
-  document.getElementById("result").innerText=`Ваш результат: ${score} из ${test.length}`;
+  document.getElementById("result").innerText=`Ваш результат: ${score} из 5`;
   return score;
 }
 document.getElementById("submit-test").onclick=async()=>{
