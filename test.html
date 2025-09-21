@@ -1,0 +1,177 @@
+
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EduGPT — качественное образование</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f0b16; --card:#10071a; --muted:#bdbcdc;
+      --accent-1:#7c3aed; --accent-2:#6b21a8;
+      --accent-3:linear-gradient(135deg,#7c3aed 0%,#5b21bf 100%);
+      --glass:rgba(255,255,255,0.03); --radius:14px; --shadow:0 8px 30px rgba(11,7,25,0.6);
+    }
+    *{box-sizing:border-box;} html,body{height:100%;margin:0;font-family:Inter,system-ui;background:var(--bg);color:#fff;}
+    .app{max-width:1200px;margin:28px auto;display:grid;grid-template-columns:1fr 360px;gap:24px;padding:0 20px;}
+    header.topbar{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .brand{display:flex;gap:12px;align-items:center;}
+    .logo{width:44px;height:44px;border-radius:10px;background:var(--accent-3);display:flex;align-items:center;justify-content:center;font-weight:800;}
+    .title{font-size:18px;font-weight:700;} .subtitle{font-size:12px;color:var(--muted);}
+    .actions{display:flex;gap:10px;align-items:center;}
+    .btn{padding:8px 12px;border-radius:10px;font-weight:600;border:0;cursor:pointer;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:white;}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);}
+    .main{background:var(--glass);padding:18px;border-radius:var(--radius);min-height:640px;}
+    .courses{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px;}
+    .card{background:var(--glass);border-radius:12px;padding:12px;}
+    .course-title{font-weight:700;font-size:15px;} .meta{color:var(--muted);font-size:12px;}
+    .lesson{margin-top:18px;padding:14px;background:var(--glass);border-radius:12px;}
+    .chat{position:sticky;top:28px;background:var(--glass);padding:12px;border-radius:12px;min-height:300px;display:flex;flex-direction:column;gap:12px;}
+    .chat .history{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px;}
+    .msg{max-width:85%;padding:10px 12px;border-radius:12px;font-size:14px;line-height:1.4;}
+    .msg.user{align-self:flex-end;background:rgba(124,58,237,0.12);} .msg.bot{align-self:flex-start;background:rgba(255,255,255,0.02);color:var(--muted);}
+    .chat .composer{display:flex;gap:8px;} .chat input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#fff;}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:60;}
+    .modal{width:100%;max-width:720px;background:var(--glass);border-radius:14px;padding:18px;}
+    #result{margin-top:10px;font-weight:600;}
+    @media(max-width:1000px){.app{grid-template-columns:1fr;padding-bottom:80px;} .chat{position:relative;order:3;}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><div class="logo">EG</div>
+        <div><div class="title">EduGPT</div><div class="subtitle">Качественное образование — Цель ООН №4</div></div>
+      </div>
+      <div class="actions">
+        <script async src="https://telegram.org/js/telegram-widget.js?22"
+          data-telegram-login="mirzotilloyev_bot"
+          data-size="large"
+          data-onauth="onTelegramAuth(user)"
+          data-request-access="write"></script>
+      </div>
+    </header>
+
+    <main class="main">
+      <h2>Курсы</h2>
+      <section class="courses" id="courses"></section>
+    </main>
+
+    <aside class="chat">
+      <div><strong>AI-помощник</strong></div>
+      <div class="history" id="chat-history"><div class="msg bot">Привет! Чем могу помочь по курсу?</div></div>
+      <div class="composer">
+        <input id="chat-input" placeholder="Задай вопрос..." />
+        <button class="btn" id="chat-send">Отправить</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Модалка для теста -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <h3 id="test-title">Тест</h3>
+      <form id="quizForm"><div id="questions"></div></form>
+      <div id="result"></div>
+      <div style="text-align:right;margin-top:12px;">
+        <button class="btn ghost" id="close-test">Закрыть</button>
+        <button class="btn" id="submit-test">Отправить результат</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* Telegram */
+function onTelegramAuth(user){ localStorage.setItem("telegram_id",user.id); }
+
+/* Курсы */
+const COURSES = [
+  {id:1,title:"Python",description:"Основы языка Python",testName:"python"},
+  {id:2,title:"Математика",description:"Базовые вычисления",testName:"math"},
+  {id:3,title:"Английский язык",description:"Базовые навыки",testName:"english"}
+];
+const coursesEl=document.getElementById("courses");
+COURSES.forEach(c=>{
+  const div=document.createElement("div"); div.className="card";
+  div.innerHTML=`<div class="course-title">${c.title}</div><div class="meta">${c.description}</div><button class="btn" onclick="openTest('${c.testName}')">Пройти тест</button>`;
+  coursesEl.appendChild(div);
+});
+
+/* Тесты */
+const tests={
+  python:[
+    {q:"1. Что выведет выражение 2 * 3 + 4?",options:["10","14","12","Ошибка"],answer:1},
+    {q:"2. Какой тип данных у True?",options:["int","str","bool","float"],answer:2},
+    {q:"3. Что делает оператор // ?",options:["Деление с остатком","Возведение в степень","Целочисленное деление","Обычное деление"],answer:2},
+    {q:"4. Чему равно len('Python')?",options:["5","6","7","Ошибка"],answer:1},
+    {q:"5. Что выведет цикл for i in range(3): print(i)?",options:["1 2 3","0 1 2","0 1 2 3","Ошибка"],answer:1}
+  ],
+  math:[
+    {q:"1. Сколько будет 7 + 8?",options:["14","15","16","13"],answer:1},
+    {q:"2. Чему равно 12 × 12?",options:["124","144","132","122"],answer:1},
+    {q:"3. Сколько будет 25 ÷ 5?",options:["4","6","5","10"],answer:2},
+    {q:"4. Реши уравнение: 2x + 6 = 14",options:["4","5","6","7"],answer:0},
+    {q:"5. Чему равен √81?",options:["8","9","10","11"],answer:1}
+  ],
+  english:[
+    {q:"1. What is the plural of 'child'?",options:["childs","children","childs’","childer"],answer:1},
+    {q:"2. Choose the correct article: '___ apple is on the table.'",options:["A","An","The","No article"],answer:1},
+    {q:"3. What is the past form of 'go'?",options:["goed","went","gone","goes"],answer:1},
+    {q:"4. She ___ playing football now.",options:["is","are","am","be"],answer:0},
+    {q:"5. Translate: 'Я люблю читать книги.'",options:["I love to read books.","I like reading a book.","I am loving books.","I read love books."],answer:0}
+  ]
+};
+let currentTest=null;
+function openTest(name){
+  currentTest=name; document.getElementById("test-title").innerText="Тест: "+name;
+  const qwrap=document.getElementById("questions"); qwrap.innerHTML="";
+  tests[name].forEach((t,i)=>{
+    const div=document.createElement("div");
+    div.innerHTML=`<p>${t.q}</p>`+t.options.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join("<br>");
+    qwrap.appendChild(div);
+  });
+  document.getElementById("modal").style.display="flex";
+}
+document.getElementById("close-test").onclick=()=>document.getElementById("modal").style.display="none";
+
+function checkAnswers(testName){
+  const test=tests[testName]; const form=document.getElementById("quizForm"); let score=0;
+  test.forEach((item,i)=>{const selected=form[`q${i}`].value; if(parseInt(selected)===item.answer)score++;});
+  document.getElementById("result").innerText=`Ваш результат: ${score} из ${test.length}`;
+  return score;
+}
+document.getElementById("submit-test").onclick=async()=>{
+  const score=checkAnswers(currentTest);
+  const telegram_id=localStorage.getItem("telegram_id");
+  try{
+    await fetch("/api/send-test-result",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({test:currentTest,score,telegram_id})});
+    alert("Результат отправлен в Telegram!");
+  }catch(e){alert("Ошибка отправки");}
+};
+
+/* Чат */
+document.getElementById("chat-send").onclick=sendChat;
+async function sendChat(){
+  const input=document.getElementById("chat-input"); const text=input.value.trim(); if(!text)return;
+  appendMsg("user",text); input.value="";
+  try{
+    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:text}]})});
+    const d=await r.json(); appendMsg("bot",d.choices?.[0]?.message?.content ?? "Нет ответа");
+  }catch(e){appendMsg("bot","Ошибка сервера");}
+}
+function appendMsg(kind,text){const d=document.createElement("div");d.className="msg "+kind;d.textContent=text;document.getElementById("chat-history").appendChild(d);}
+
+
+</script>
+  <script>
+    let telegram_id = null;
+
+    function onTelegramAuth(user) {
+      telegram_id = user.id;
+      document.getElementById("userInfo").innerText =
+        `Вы вошли как ${user.first_name} (ID: ${user.id})`;
+        </script>
+</body>
+</html>
